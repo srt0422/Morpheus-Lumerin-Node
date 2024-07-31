@@ -53,6 +53,8 @@ func (c *BlockchainController) RegisterRoutes(r interfaces.Router) {
 	r.POST("/blockchain/sessions/:id/close", c.closeSession)
 	r.GET("/blockchain/sessions/budget", c.getBudget)
 	r.GET("/blockchain/token/supply", c.getSupply)
+	r.GET("/blockchain/user/stake", c.getWithdrawableUserStake)
+	r.POST("/blockchain/user/stake", c.withdrawUserStake)
 }
 
 // GetProviderClaimableBalance godoc
@@ -715,6 +717,61 @@ func (c *BlockchainController) getLatestBlock(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"block": block})
+	return
+}
+
+// GetWithdrawableUserStake godoc
+//
+//		@Summary		Get User Stake
+//		@Description	Get user locked stake from blockchain
+//	 	@Tags			wallet
+//		@Produce		json
+//		@Success		200	{object}	interface{}
+//		@Router			/blockchain/user/stake [get]
+func (c *BlockchainController) getWithdrawableUserStake(ctx *gin.Context) {
+	_, limit, err := getPageLimit(ctx)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.log.Info(limit)
+
+	stake, err := c.service.GetWithdrawableUserStake(ctx, limit)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"stake": stake})
+	return
+}
+
+// WithdrawUserStake godoc
+//
+//		@Summary		Withdraw User Stake
+//		@Description	Withdraw user locked stake from blockchain
+//	 	@Tags			wallet
+//		@Produce		json
+//		@Success		200	{object}	interface{}
+//		@Router			/blockchain/user/stake [post]
+func (c *BlockchainController) withdrawUserStake(ctx *gin.Context) {
+	var reqPayload structs.WithdrawUserStakeRequest
+	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := c.service.WithdrawUserStake(ctx, &reqPayload.Amount.Int, reqPayload.Iterations)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
 	return
 }
 

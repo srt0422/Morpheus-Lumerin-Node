@@ -155,3 +155,32 @@ func (g *SessionRouter) GetContractAddress() common.Address {
 func (g *SessionRouter) GetABI() *abi.ABI {
 	return g.srABI
 }
+
+func (g *SessionRouter) GetWithdrawableUserStake(ctx context.Context, userAddr common.Address, limit uint8) (*struct {
+	Available *big.Int
+	Hold      *big.Int
+}, error) {
+	stake, err := g.sessionRouter.WithdrawableUserStake(&bind.CallOpts{Context: ctx}, userAddr, limit)
+	if err != nil {
+		return nil, lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
+	}
+	return &struct {
+		Available *big.Int
+		Hold      *big.Int
+	}{Available: stake.Avail, Hold: stake.Hold}, nil
+}
+
+func (g *SessionRouter) WithdrawUserStake(ctx context.Context, amount *big.Int, iteration uint8) error {
+	withdrawTx, err := g.sessionRouter.WithdrawUserStake(&bind.TransactOpts{Context: ctx}, amount, iteration)
+	if err != nil {
+		return lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
+	}
+
+	// Wait for the transaction receipt
+	_, err = bind.WaitMined(ctx, g.client, withdrawTx)
+	if err != nil {
+		return lib.TryConvertGethError(err, sessionrouter.SessionRouterMetaData)
+	}
+
+	return nil
+}

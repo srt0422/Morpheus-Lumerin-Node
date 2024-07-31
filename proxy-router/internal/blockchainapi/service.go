@@ -53,14 +53,16 @@ var (
 	ErrSessionStore  = errors.New("failed to store session")
 	ErrSessionReport = errors.New("failed to get session report from provider")
 
-	ErrBid         = errors.New("failed to get bid")
-	ErrProvider    = errors.New("failed to get provider")
-	ErrTokenSupply = errors.New("failed to parse token supply")
-	ErrBudget      = errors.New("failed to parse token budget")
-	ErrMyAddress   = errors.New("failed to get my address")
-	ErrInitSession = errors.New("failed to initiate session")
-	ErrApprove     = errors.New("failed to approve")
-	ErrMarshal     = errors.New("failed to marshal open session payload")
+	ErrBid           = errors.New("failed to get bid")
+	ErrProvider      = errors.New("failed to get provider")
+	ErrTokenSupply   = errors.New("failed to parse token supply")
+	ErrBudget        = errors.New("failed to parse token budget")
+	ErrMyAddress     = errors.New("failed to get my address")
+	ErrInitSession   = errors.New("failed to initiate session")
+	ErrApprove       = errors.New("failed to approve")
+	ErrMarshal       = errors.New("failed to marshal open session payload")
+	ErrGetUserStake  = errors.New("failed to get user locked stake")
+	ErrWithdrawStake = errors.New("failed to withdraw user locked stake")
 
 	ErrNoBid = errors.New("no bids available")
 	ErrModel = errors.New("can't get model")
@@ -640,4 +642,30 @@ func (s *BlockchainService) signTx(ctx context.Context, tx *types.Transaction, p
 	}
 
 	return types.SignTx(tx, types.NewEIP155Signer(chainId), privateKey)
+}
+
+func (s *BlockchainService) GetWithdrawableUserStake(ctx context.Context, limit uint8) (*struct {
+	Available *big.Int
+	Hold      *big.Int
+}, error) {
+	userAddr, err := s.GetMyAddress(ctx)
+	if err != nil {
+		return nil, lib.WrapError(ErrMyAddress, err)
+	}
+
+	stake, err := s.sessionRouter.GetWithdrawableUserStake(ctx, userAddr, limit)
+	if err != nil {
+		return nil, lib.WrapError(ErrGetUserStake, err)
+	}
+
+	return stake, nil
+}
+
+func (s *BlockchainService) WithdrawUserStake(ctx context.Context, amount *big.Int, iterations uint8) error {
+	err := s.sessionRouter.WithdrawUserStake(ctx, amount, iterations)
+	if err != nil {
+		return lib.WrapError(ErrWithdrawStake, err)
+	}
+
+	return nil
 }

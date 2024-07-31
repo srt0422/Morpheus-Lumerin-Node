@@ -51,3 +51,8 @@ type QueryUserOrProvider struct {
 type OpenSessionWithDurationRequest struct {
 	SessionDuration *lib.BigInt `json:"sessionDuration"`
 }
+
+type WithdrawUserStakeRequest struct {
+	Amount     *lib.BigInt `form:"amount" binding:"required" validate:"number,gt=0"`
+	Iterations uint8       `form:"iterations,default=10" binding:"omitempty" validate:"number"`
+}

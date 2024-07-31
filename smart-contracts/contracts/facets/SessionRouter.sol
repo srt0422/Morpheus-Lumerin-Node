@@ -377,16 +377,15 @@ contract SessionRouter {
   /// @param iterations number of entries to process
   function withdrawUserStake(uint256 amountToWithdraw, uint8 iterations) external {
     // withdraw all available funds if amountToWithdraw is 0
-    if (amountToWithdraw == 0) {
-      amountToWithdraw = type(uint256).max;
-    }
+    bool claimAvailableFunds = amountToWithdraw == 0;
+    uint256 amountToClaim = claimAvailableFunds ? type(uint256).max : amountToWithdraw;
 
-    uint256 removed = _removeUserStake(amountToWithdraw, iterations);
-    if (removed < amountToWithdraw) {
+    uint256 removed = _removeUserStake(amountToClaim, iterations);
+    if (removed < amountToClaim && !claimAvailable) {
       revert NotEnoughWithdrawableBalance();
     }
 
-    s.token.transfer(msg.sender, amountToWithdraw);
+    s.token.transfer(msg.sender, amountToClaim);
   }
 
   /// @dev removes user stake amount from onHold entries
