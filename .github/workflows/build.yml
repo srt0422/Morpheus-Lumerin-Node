@@ -35,7 +35,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21.x'
+          go-version: '1.22.x'
           cache-dependency-path: |
             launcher/go.sum
             proxy-router/go.sum
@@ -114,7 +114,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21.x'
+          go-version: '1.22.x'
           cache-dependency-path: |
             launcher/go.sum
             proxy-router/go.sum
@@ -193,7 +193,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21.x'
+          go-version: '1.22.x'
           cache-dependency-path: |
             launcher/go.sum
             proxy-router/go.sum
@@ -272,7 +272,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21.x'
+          go-version: '1.22.x'
           cache-dependency-path: |
             launcher/go.sum
             proxy-router/go.sum
