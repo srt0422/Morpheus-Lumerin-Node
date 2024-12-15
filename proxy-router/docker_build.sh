@@ -33,11 +33,11 @@ export VERSION COMMIT TAG_NAME
 # Check if the user wants to build or run the Docker image
 if [ "$1" = "--build" ]; then
   echo "Building Docker image..."
-  docker-compose build
+  docker compose build
   docker tag proxy-router:$VERSION proxy-router:latest
 elif [ "$1" = "--run" ]; then
   echo "Running Docker container..."
-  docker-compose up
+  docker compose up
 else
   echo "Usage: $0 [--build | --run]"
 fi
