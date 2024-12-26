@@ -260,6 +260,32 @@ const docTemplate = `{
                     "models"
                 ],
                 "summary": "Get models list",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minLength": 0,
+                        "type": "string",
+                        "example": "0",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "example": "asc",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -270,6 +296,7 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "description": "If you provide ID in request it will be used as \"Base Id\" for generation of new model ID. So actual ID will be generated from it, and you will get it in response.",
                 "consumes": [
                     "application/json"
                 ],
@@ -346,6 +373,30 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minLength": 0,
+                        "type": "string",
+                        "example": "0",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "example": "asc",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -407,7 +458,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/structs.OpenSessionWithDurationRequest"
+                            "$ref": "#/definitions/structs.OpenSessionWithFailover"
                         }
                     },
                     {
@@ -438,6 +489,32 @@ const docTemplate = `{
                     "providers"
                 ],
                 "summary": "Get providers list",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minLength": 0,
+                        "type": "string",
+                        "example": "0",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "example": "asc",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -491,7 +568,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Provider Address",
+                        "description": "Provider ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -520,22 +597,34 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Offset",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Provider ID",
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minLength": 0,
+                        "type": "string",
+                        "example": "0",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "example": "asc",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -565,6 +654,30 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minLength": 0,
+                        "type": "string",
+                        "example": "0",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "example": "asc",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -705,15 +818,27 @@ const docTemplate = `{
                 "summary": "Get Sessions for Provider",
                 "parameters": [
                     {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minLength": 0,
                         "type": "string",
-                        "description": "Offset",
+                        "example": "0",
                         "name": "offset",
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
                         "type": "string",
-                        "description": "Limit",
-                        "name": "limit",
+                        "example": "asc",
+                        "name": "order",
                         "in": "query"
                     },
                     {
@@ -747,22 +872,87 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Offset",
+                        "description": "User address",
+                        "name": "user",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minLength": 0,
+                        "type": "string",
+                        "example": "0",
                         "name": "offset",
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
                         "type": "string",
-                        "description": "Limit",
-                        "name": "limit",
+                        "example": "asc",
+                        "name": "order",
                         "in": "query"
-                    },
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/structs.SessionsRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/blockchain/sessions/user/ids": {
+            "get": {
+                "description": "Get sessions from blockchain by user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Get Sessions for User",
+                "parameters": [
                     {
                         "type": "string",
                         "description": "User address",
                         "name": "user",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minLength": 0,
+                        "type": "string",
+                        "example": "0",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "example": "asc",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -894,9 +1084,61 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "healthcheck"
+                    "system"
                 ],
                 "summary": "Get Config",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/system.ConfigResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/config/ethNode": {
+            "post": {
+                "description": "Set the Eth Node URLs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Set Eth Node URLs",
+                "parameters": [
+                    {
+                        "description": "URLs",
+                        "name": "urls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/system.SetEthNodeURLReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/system.ConfigResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete the Eth Node URLs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "system"
+                ],
+                "summary": "Delete Eth Node URLs",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -914,7 +1156,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "healthcheck"
+                    "system"
                 ],
                 "summary": "Get files",
                 "responses": {
@@ -937,7 +1179,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "healthcheck"
+                    "system"
                 ],
                 "summary": "Healthcheck example",
                 "responses": {
@@ -945,6 +1187,37 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/system.HealthCheckResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/proxy/provider/ping": {
+            "post": {
+                "description": "sends a ping to the provider on the RPC level",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Ping Provider",
+                "parameters": [
+                    {
+                        "description": "Ping Request",
+                        "name": "pingReq",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.PingReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.PingRes"
                         }
                     }
                 }
@@ -992,15 +1265,6 @@ const docTemplate = `{
                 ],
                 "summary": "Claim Provider Balance",
                 "parameters": [
-                    {
-                        "description": "Claim",
-                        "name": "claim",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/structs.AmountReq"
-                        }
-                    },
                     {
                         "type": "string",
                         "description": "Session ID",
@@ -1074,12 +1338,19 @@ const docTemplate = `{
                         "in": "header"
                     },
                     {
+                        "type": "string",
+                        "format": "hex32",
+                        "description": "Chat ID",
+                        "name": "chat_id",
+                        "in": "header"
+                    },
+                    {
                         "description": "Prompt",
                         "name": "prompt",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/proxyapi.OpenAiCompletitionRequest"
+                            "$ref": "#/definitions/proxyapi.ChatCompletionRequestSwaggerExample"
                         }
                     }
                 ],
@@ -1087,7 +1358,118 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/proxyapi.ChatCompletionResponse"
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/chats": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Get all chats stored in the system",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/genericchatstorage.Chat"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/chats/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Get chat by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Chat ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/genericchatstorage.ChatHistory"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Update chat title by id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Chat ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Chat Title",
+                        "name": "title",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.UpdateChatTitleReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.ResultResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Delete chat by id from storage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Chat ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proxyapi.ResultResponse"
                         }
                     }
                 }
@@ -1099,7 +1481,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "chat"
+                    "system"
                 ],
                 "summary": "Get local models",
                 "responses": {
@@ -1230,6 +1612,12 @@ const docTemplate = `{
                 "apiType": {
                     "type": "string"
                 },
+                "apiUrl": {
+                    "type": "string"
+                },
+                "capacityPolicy": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -1237,6 +1625,170 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "slots": {
+                    "type": "integer"
+                }
+            }
+        },
+        "genericchatstorage.Chat": {
+            "type": "object",
+            "properties": {
+                "chatId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "integer"
+                },
+                "isLocal": {
+                    "type": "boolean"
+                },
+                "modelId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "genericchatstorage.ChatCompletionMessage": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "This property isn't in the official documentation, but it's in\nthe documentation for the official library for python:\n- https://github.com/openai/openai-python/blob/main/chatml.md\n- https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb",
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "tool_call_id": {
+                    "description": "For Role=tool prompts this should be set to the ID given in the assistant's prior request to call a tool.",
+                    "type": "string"
+                }
+            }
+        },
+        "genericchatstorage.ChatCompletionResponseFormat": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "genericchatstorage.ChatHistory": {
+            "type": "object",
+            "properties": {
+                "isLocal": {
+                    "type": "boolean"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/genericchatstorage.ChatMessage"
+                    }
+                },
+                "modelId": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "genericchatstorage.ChatMessage": {
+            "type": "object",
+            "properties": {
+                "isImageContent": {
+                    "type": "boolean"
+                },
+                "isVideoRawContent": {
+                    "type": "boolean"
+                },
+                "prompt": {
+                    "$ref": "#/definitions/genericchatstorage.OpenAiCompletionRequest"
+                },
+                "promptAt": {
+                    "type": "integer"
+                },
+                "response": {
+                    "type": "string"
+                },
+                "responseAt": {
+                    "type": "integer"
+                }
+            }
+        },
+        "genericchatstorage.OpenAiCompletionRequest": {
+            "type": "object",
+            "properties": {
+                "frequency_penalty": {
+                    "type": "number"
+                },
+                "function_call": {
+                    "description": "Deprecated: use ToolChoice instead."
+                },
+                "logit_bias": {
+                    "description": "LogitBias is must be a token id string (specified by their token ID in the tokenizer), not a word string.\nincorrect: ` + "`" + `\"logit_bias\":{\"You\": 6}` + "`" + `, correct: ` + "`" + `\"logit_bias\":{\"1639\": 6}` + "`" + `\nrefs: https://platform.openai.com/docs/api-reference/chat/create#chat/create-logit_bias",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "logprobs": {
+                    "description": "LogProbs indicates whether to return log probabilities of the output tokens or not.\nIf true, returns the log probabilities of each output token returned in the content of message.\nThis option is currently not available on the gpt-4-vision-preview model.",
+                    "type": "boolean"
+                },
+                "max_tokens": {
+                    "type": "integer"
+                },
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/genericchatstorage.ChatCompletionMessage"
+                    }
+                },
+                "model": {
+                    "type": "string"
+                },
+                "n": {
+                    "type": "integer"
+                },
+                "presence_penalty": {
+                    "type": "number"
+                },
+                "response_format": {
+                    "$ref": "#/definitions/genericchatstorage.ChatCompletionResponseFormat"
+                },
+                "seed": {
+                    "type": "integer"
+                },
+                "stop": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "stream": {
+                    "type": "boolean"
+                },
+                "temperature": {
+                    "type": "number"
+                },
+                "tool_choice": {
+                    "description": "This can be either a string or an ToolChoice object."
+                },
+                "top_logprobs": {
+                    "description": "TopLogProbs is an integer between 0 and 5 specifying the number of most likely tokens to return at each\ntoken position, each with an associated log probability.\nlogprobs must be set to true if this parameter is used.",
+                    "type": "integer"
+                },
+                "top_p": {
+                    "type": "number"
+                },
+                "user": {
                     "type": "string"
                 }
             }
@@ -1272,161 +1824,29 @@ const docTemplate = `{
                 }
             }
         },
-        "proxyapi.ChatCompletionChoice": {
+        "proxyapi.ChatCompletionRequestSwaggerExample": {
             "type": "object",
             "properties": {
-                "delta": {
-                    "$ref": "#/definitions/proxyapi.ChatCompletionDelta"
-                },
-                "finish_reason": {
-                    "description": "FinishReason\nstop: API returned complete message,\nor a message terminated by one of the stop sequences provided via the stop parameter\nlength: Incomplete model output due to max_tokens parameter or token limit\nfunction_call: The model decided to call a function\ncontent_filter: Omitted content due to a flag from our content filters\nnull: API response still in progress or incomplete",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/proxyapi.FinishReason"
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "content": {
+                                "type": "string",
+                                "example": "tell me a joke"
+                            },
+                            "role": {
+                                "type": "string",
+                                "example": "user"
+                            }
                         }
-                    ]
-                },
-                "index": {
-                    "type": "integer"
-                },
-                "logprobs": {
-                    "$ref": "#/definitions/proxyapi.LogProbs"
-                },
-                "message": {
-                    "$ref": "#/definitions/proxyapi.ChatCompletionMessage"
-                }
-            }
-        },
-        "proxyapi.ChatCompletionDelta": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                }
-            }
-        },
-        "proxyapi.ChatCompletionMessage": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "multiContent": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/proxyapi.ChatMessagePart"
                     }
                 },
-                "name": {
-                    "description": "This property isn't in the official documentation, but it's in\nthe documentation for the official library for python:\n- https://github.com/openai/openai-python/blob/main/chatml.md\n- https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb",
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "tool_call_id": {
-                    "description": "For Role=tool prompts this should be set to the ID given in the assistant's prior request to call a tool.",
-                    "type": "string"
+                "stream": {
+                    "type": "boolean"
                 }
             }
-        },
-        "proxyapi.ChatCompletionResponse": {
-            "type": "object",
-            "properties": {
-                "choices": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/proxyapi.ChatCompletionChoice"
-                    }
-                },
-                "created": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "model": {
-                    "type": "string"
-                },
-                "object": {
-                    "type": "string"
-                },
-                "system_fingerprint": {
-                    "type": "string"
-                },
-                "usage": {
-                    "$ref": "#/definitions/proxyapi.Usage"
-                }
-            }
-        },
-        "proxyapi.ChatCompletionResponseFormat": {
-            "type": "object",
-            "properties": {
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "proxyapi.ChatMessageImageURL": {
-            "type": "object",
-            "properties": {
-                "detail": {
-                    "$ref": "#/definitions/proxyapi.ImageURLDetail"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "proxyapi.ChatMessagePart": {
-            "type": "object",
-            "properties": {
-                "image_url": {
-                    "$ref": "#/definitions/proxyapi.ChatMessageImageURL"
-                },
-                "text": {
-                    "type": "string"
-                },
-                "type": {
-                    "$ref": "#/definitions/proxyapi.ChatMessagePartType"
-                }
-            }
-        },
-        "proxyapi.ChatMessagePartType": {
-            "type": "string",
-            "enum": [
-                "text",
-                "image_url"
-            ],
-            "x-enum-varnames": [
-                "ChatMessagePartTypeText",
-                "ChatMessagePartTypeImageURL"
-            ]
-        },
-        "proxyapi.FinishReason": {
-            "type": "string",
-            "enum": [
-                "stop"
-            ],
-            "x-enum-varnames": [
-                "FinishReasonStop"
-            ]
-        },
-        "proxyapi.ImageURLDetail": {
-            "type": "string",
-            "enum": [
-                "high",
-                "low",
-                "auto"
-            ],
-            "x-enum-varnames": [
-                "ImageURLDetailHigh",
-                "ImageURLDetailLow",
-                "ImageURLDetailAuto"
-            ]
         },
         "proxyapi.InitiateSessionReq": {
             "type": "object",
@@ -1455,142 +1875,45 @@ const docTemplate = `{
                 }
             }
         },
-        "proxyapi.LogProb": {
+        "proxyapi.PingReq": {
             "type": "object",
+            "required": [
+                "providerAddr",
+                "providerUrl"
+            ],
             "properties": {
-                "bytes": {
-                    "description": "Omitting the field if it is null",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "logprob": {
-                    "type": "number"
-                },
-                "token": {
+                "providerAddr": {
                     "type": "string"
                 },
-                "top_logprobs": {
-                    "description": "TopLogProbs is a list of the most likely tokens and their log probability, at this token position.\nIn rare cases, there may be fewer than the number of requested top_logprobs returned.",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/proxyapi.TopLogProbs"
-                    }
+                "providerUrl": {
+                    "type": "string"
                 }
             }
         },
-        "proxyapi.LogProbs": {
+        "proxyapi.PingRes": {
             "type": "object",
             "properties": {
-                "content": {
-                    "description": "Content is a list of message content tokens with log probability information.",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/proxyapi.LogProb"
-                    }
+                "ping": {
+                    "type": "integer"
                 }
             }
         },
-        "proxyapi.OpenAiCompletitionRequest": {
+        "proxyapi.ResultResponse": {
             "type": "object",
             "properties": {
-                "frequency_penalty": {
-                    "type": "number"
-                },
-                "function_call": {
-                    "description": "Deprecated: use ToolChoice instead."
-                },
-                "logit_bias": {
-                    "description": "LogitBias is must be a token id string (specified by their token ID in the tokenizer), not a word string.\nincorrect: ` + "`" + `\"logit_bias\":{\"You\": 6}` + "`" + `, correct: ` + "`" + `\"logit_bias\":{\"1639\": 6}` + "`" + `\nrefs: https://platform.openai.com/docs/api-reference/chat/create#chat/create-logit_bias",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "logprobs": {
-                    "description": "LogProbs indicates whether to return log probabilities of the output tokens or not.\nIf true, returns the log probabilities of each output token returned in the content of message.\nThis option is currently not available on the gpt-4-vision-preview model.",
+                "result": {
                     "type": "boolean"
-                },
-                "max_tokens": {
-                    "type": "integer"
-                },
-                "messages": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/proxyapi.ChatCompletionMessage"
-                    }
-                },
-                "model": {
-                    "type": "string"
-                },
-                "n": {
-                    "type": "integer"
-                },
-                "presence_penalty": {
-                    "type": "number"
-                },
-                "response_format": {
-                    "$ref": "#/definitions/proxyapi.ChatCompletionResponseFormat"
-                },
-                "seed": {
-                    "type": "integer"
-                },
-                "stop": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "stream": {
-                    "type": "boolean"
-                },
-                "temperature": {
-                    "type": "number"
-                },
-                "tool_choice": {
-                    "description": "This can be either a string or an ToolChoice object."
-                },
-                "top_logprobs": {
-                    "description": "TopLogProbs is an integer between 0 and 5 specifying the number of most likely tokens to return at each\ntoken position, each with an associated log probability.\nlogprobs must be set to true if this parameter is used.",
-                    "type": "integer"
-                },
-                "top_p": {
-                    "type": "number"
-                },
-                "user": {
-                    "type": "string"
                 }
             }
         },
-        "proxyapi.TopLogProbs": {
+        "proxyapi.UpdateChatTitleReq": {
             "type": "object",
+            "required": [
+                "title"
+            ],
             "properties": {
-                "bytes": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "logprob": {
-                    "type": "number"
-                },
-                "token": {
+                "title": {
                     "type": "string"
-                }
-            }
-        },
-        "proxyapi.Usage": {
-            "type": "object",
-            "properties": {
-                "completion_tokens": {
-                    "type": "integer"
-                },
-                "prompt_tokens": {
-                    "type": "integer"
-                },
-                "total_tokens": {
-                    "type": "integer"
                 }
             }
         },
@@ -1600,17 +1923,6 @@ const docTemplate = `{
                 "allowance": {
                     "type": "string",
                     "example": "100000000"
-                }
-            }
-        },
-        "structs.AmountReq": {
-            "type": "object",
-            "required": [
-                "amount"
-            ],
-            "properties": {
-                "amount": {
-                    "type": "string"
                 }
             }
         },
@@ -1831,6 +2143,9 @@ const docTemplate = `{
                     "format": "hex",
                     "example": "0x1234"
                 },
+                "directPayment": {
+                    "type": "boolean"
+                },
                 "stake": {
                     "type": "string",
                     "example": "123000000000"
@@ -1849,6 +2164,20 @@ const docTemplate = `{
         "structs.OpenSessionWithDurationRequest": {
             "type": "object",
             "properties": {
+                "sessionDuration": {
+                    "type": "string"
+                }
+            }
+        },
+        "structs.OpenSessionWithFailover": {
+            "type": "object",
+            "properties": {
+                "directPayment": {
+                    "type": "boolean"
+                },
+                "failover": {
+                    "type": "boolean"
+                },
                 "sessionDuration": {
                     "type": "string"
                 }
@@ -2143,6 +2472,20 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "system.SetEthNodeURLReq": {
+            "type": "object",
+            "required": [
+                "urls"
+            ],
+            "properties": {
+                "urls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
         }
     },
     "externalDocs": {
@@ -2153,7 +2496,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},

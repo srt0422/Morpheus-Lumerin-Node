@@ -4,26 +4,36 @@ import (
 	"fmt"
 	"math/big"
 	"runtime"
+	"strings"
+	"time"
 
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/multicall"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type DerivedConfig struct {
 	WalletAddress common.Address
 	ChainID       *big.Int
+	EthNodeURLs   []string
 }
 
 // Validation tags described here: https://pkg.go.dev/github.com/go-playground/validator/v10
 type Config struct {
-	AIEngine struct {
-		OpenAIBaseURL string `env:"OPENAI_BASE_URL"     flag:"open-ai-base-url"   validate:"required,url"`
-		OpenAIKey     string `env:"OPENAI_API_KEY"      flag:"open-ai-api-key"`
+	App struct {
+		ResetKeychain bool `env:"APP_RESET_KEYCHAIN" flag:"app-reset-keychain" desc:"reset keychain on start"`
 	}
 	Blockchain struct {
-		EthNodeAddress string `env:"ETH_NODE_ADDRESS"   flag:"eth-node-address"   validate:"required,url"`
-		EthLegacyTx    bool   `env:"ETH_NODE_LEGACY_TX" flag:"eth-node-legacy-tx" desc:"use it to disable EIP-1559 transactions"`
-		ExplorerApiUrl string `env:"EXPLORER_API_URL"   flag:"explorer-api-url"   validate:"required,url"`
+		ChainID            int             `env:"ETH_NODE_CHAIN_ID"  flag:"eth-node-chain-id"  validate:"number"`
+		EthNodeAddress     string          `env:"ETH_NODE_ADDRESS"   flag:"eth-node-address"   validate:"omitempty,url"`
+		EthLegacyTx        bool            `env:"ETH_NODE_LEGACY_TX" flag:"eth-node-legacy-tx" desc:"use it to disable EIP-1559 transactions"`
+		ExplorerApiUrl     string          `env:"EXPLORER_API_URL"   flag:"explorer-api-url"   validate:"required,url"`
+		ExplorerRetryDelay time.Duration   `env:"EXPLORER_RETRY_DELAY" flag:"explorer-retry-delay" validate:"omitempty,duration" desc:"delay between retries"`
+		ExplorerMaxRetries uint8           `env:"EXPLORER_MAX_RETRIES" flag:"explorer-max-retries" validate:"omitempty,gte=0" desc:"max retries for explorer requests"`
+		UseSubscriptions   bool            `env:"ETH_NODE_USE_SUBSCRIPTIONS"  flag:"eth-node-use-subscriptions"  desc:"set it to true to enable subscriptions for blockchain events, otherwise default polling will be used"`
+		PollingInterval    time.Duration   `env:"ETH_NODE_POLLING_INTERVAL" flag:"eth-node-polling-interval" validate:"omitempty,duration" desc:"interval for polling eth node for new events"`
+		MaxReconnects      int             `env:"ETH_NODE_MAX_RECONNECTS" flag:"eth-node-max-reconnects" validate:"omitempty,gte=0" desc:"max reconnects to eth node"`
+		Multicall3Addr     *common.Address `env:"MULTICALL3_ADDR" flag:"multicall3-addr" validate:"omitempty,eth_addr" desc:"multicall3 custom contract address"`
 	}
 	Environment string `env:"ENVIRONMENT" flag:"environment"`
 	Marketplace struct {
@@ -32,21 +42,22 @@ type Config struct {
 		WalletPrivateKey       *lib.HexString  `env:"WALLET_PRIVATE_KEY"       flag:"wallet-private-key"     desc:"if set, will use this private key to sign transactions, otherwise it will be retrieved from the system keychain"`
 	}
 	Log struct {
-		Color           bool   `env:"LOG_COLOR"            flag:"log-color"`
-		FolderPath      string `env:"LOG_FOLDER_PATH"      flag:"log-folder-path"      validate:"omitempty,dirpath"    desc:"enables file logging and sets the folder path"`
-		IsProd          bool   `env:"LOG_IS_PROD"          flag:"log-is-prod"          validate:""                     desc:"affects the format of the log output"`
-		JSON            bool   `env:"LOG_JSON"             flag:"log-json"`
-		LevelApp        string `env:"LOG_LEVEL_APP"        flag:"log-level-app"        validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
-		LevelConnection string `env:"LOG_LEVEL_CONNECTION" flag:"log-level-connection" validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
-		LevelProxy      string `env:"LOG_LEVEL_PROXY"      flag:"log-level-proxy"      validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
-		LevelScheduler  string `env:"LOG_LEVEL_SCHEDULER"  flag:"log-level-scheduler"  validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
-		LevelContract   string `env:"LOG_LEVEL_CONTRACT"   flag:"log-level-contract"   validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
+		Color        bool   `env:"LOG_COLOR"            flag:"log-color"`
+		FolderPath   string `env:"LOG_FOLDER_PATH"      flag:"log-folder-path"      validate:"omitempty,dirpath"    desc:"enables file logging and sets the folder path"`
+		IsProd       bool   `env:"LOG_IS_PROD"          flag:"log-is-prod"          validate:""                     desc:"affects the format of the log output"`
+		JSON         bool   `env:"LOG_JSON"             flag:"log-json"`
+		LevelApp     string `env:"LOG_LEVEL_APP"        flag:"log-level-app"        validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
+		LevelTCP     string `env:"LOG_LEVEL_TCP" flag:"log-level-tcp" validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
+		LevelEthRPC  string `env:"LOG_LEVEL_ETH_RPC"    flag:"log-level-eth-rpc"        validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
+		LevelStorage string `env:"LOG_LEVEL_STORAGE"     flag:"log-level-storage"     validate:"omitempty,oneof=debug info warn error dpanic panic fatal"`
 	}
 	Proxy struct {
-		Address          string `env:"PROXY_ADDRESS" flag:"proxy-address" validate:"required,hostname_port"`
-		MaxCachedDests   int    `env:"PROXY_MAX_CACHED_DESTS" flag:"proxy-max-cached-dests" validate:"required,number" desc:"maximum number of cached destinations per proxy"`
-		StoragePath      string `env:"PROXY_STORAGE_PATH"    flag:"proxy-storage-path"    validate:"omitempty,dirpath" desc:"enables file storage and sets the folder path"`
-		ModelsConfigPath string `env:"MODELS_CONFIG_PATH" flag:"models-config-path" validate:"omitempty"`
+		Address            string    `env:"PROXY_ADDRESS" flag:"proxy-address" validate:"required,hostname_port"`
+		StoragePath        string    `env:"PROXY_STORAGE_PATH"    flag:"proxy-storage-path"    validate:"omitempty,dirpath" desc:"enables file storage and sets the folder path"`
+		StoreChatContext   *lib.Bool `env:"PROXY_STORE_CHAT_CONTEXT" flag:"proxy-store-chat-context" desc:"store chat context in the proxy storage"`
+		ForwardChatContext *lib.Bool `env:"PROXY_FORWARD_CHAT_CONTEXT" flag:"proxy-forward-chat-context" desc:"prepend whole stored message history to the prompt"`
+		ModelsConfigPath   string    `env:"MODELS_CONFIG_PATH" flag:"models-config-path" validate:"omitempty"`
+		RatingConfigPath   string    `env:"RATING_CONFIG_PATH" flag:"rating-config-path" validate:"omitempty" desc:"path to the rating config file"`
 	}
 	System struct {
 		Enable           bool   `env:"SYS_ENABLE"              flag:"sys-enable" desc:"enable system level configuration adjustments"`
@@ -68,32 +79,39 @@ func (cfg *Config) SetDefaults() {
 		cfg.Environment = "development"
 	}
 
+	// Blockchain
+	if cfg.Blockchain.MaxReconnects == 0 {
+		cfg.Blockchain.MaxReconnects = 30
+	}
+	if cfg.Blockchain.PollingInterval == 0 {
+		cfg.Blockchain.PollingInterval = 10 * time.Second
+	}
+	if cfg.Blockchain.Multicall3Addr.Cmp(common.Address{}) == 0 {
+		cfg.Blockchain.Multicall3Addr = &multicall.MULTICALL3_ADDR
+	}
+	if cfg.Blockchain.ExplorerRetryDelay == 0 {
+		cfg.Blockchain.ExplorerRetryDelay = 5 * time.Second
+	}
+	if cfg.Blockchain.ExplorerMaxRetries == 0 {
+		cfg.Blockchain.ExplorerMaxRetries = 5
+	}
+
 	// Log
 
-	if cfg.Log.LevelConnection == "" {
-		cfg.Log.LevelConnection = "info"
-	}
-	if cfg.Log.LevelProxy == "" {
-		cfg.Log.LevelProxy = "info"
-	}
-	if cfg.Log.LevelScheduler == "" {
-		cfg.Log.LevelScheduler = "info"
-	}
-	if cfg.Log.LevelContract == "" {
-		cfg.Log.LevelContract = "debug"
+	if cfg.Log.LevelTCP == "" {
+		cfg.Log.LevelTCP = "info"
 	}
 	if cfg.Log.LevelApp == "" {
 		cfg.Log.LevelApp = "debug"
 	}
-
-	// Proxy
-	if cfg.Proxy.MaxCachedDests == 0 {
-		cfg.Proxy.MaxCachedDests = 5
+	if cfg.Log.LevelEthRPC == "" {
+		cfg.Log.LevelEthRPC = "info"
+	}
+	if cfg.Log.LevelStorage == "" {
+		cfg.Log.LevelStorage = "info"
 	}
 
 	// System
-
-	// cfg.System.Enable = true // TODO: Temporary override, remove this line
 
 	if cfg.System.LocalPortRange == "" {
 		cfg.System.LocalPortRange = "1024 65535"
@@ -126,14 +144,29 @@ func (cfg *Config) SetDefaults() {
 		cfg.Proxy.Address = "0.0.0.0:3333"
 	}
 	if cfg.Web.Address == "" {
-		cfg.Web.Address = "0.0.0.0:8080"
+		cfg.Web.Address = "0.0.0.0:8082"
 	}
 	if cfg.Web.PublicUrl == "" {
-		cfg.Web.PublicUrl = fmt.Sprintf("http://%s", cfg.Web.Address)
+		// handle cases without domain (ex: :8082)
+		if string(cfg.Web.Address[0]) == ":" {
+			cfg.Web.PublicUrl = fmt.Sprintf("http://localhost%s", cfg.Web.Address)
+		} else {
+			cfg.Web.PublicUrl = fmt.Sprintf("http://%s", strings.Replace(cfg.Web.Address, "0.0.0.0", "localhost", -1))
+		}
 	}
-
 	if cfg.Proxy.StoragePath == "" {
 		cfg.Proxy.StoragePath = "./data/badger/"
+	}
+	if cfg.Proxy.StoreChatContext.Bool == nil {
+		val := true
+		cfg.Proxy.StoreChatContext = &lib.Bool{Bool: &val}
+	}
+	if cfg.Proxy.ForwardChatContext.Bool == nil {
+		val := true
+		cfg.Proxy.ForwardChatContext = &lib.Bool{Bool: &val}
+	}
+	if cfg.Proxy.RatingConfigPath == "" {
+		cfg.Proxy.RatingConfigPath = "./rating-config.json"
 	}
 }
 
@@ -143,6 +176,12 @@ func (cfg *Config) GetSanitized() interface{} {
 	publicCfg := Config{}
 
 	publicCfg.Blockchain.EthLegacyTx = cfg.Blockchain.EthLegacyTx
+	publicCfg.Blockchain.ChainID = cfg.Blockchain.ChainID
+	publicCfg.Blockchain.MaxReconnects = cfg.Blockchain.MaxReconnects
+	publicCfg.Blockchain.PollingInterval = cfg.Blockchain.PollingInterval
+	publicCfg.Blockchain.UseSubscriptions = cfg.Blockchain.UseSubscriptions
+	publicCfg.Blockchain.ExplorerApiUrl = cfg.Blockchain.ExplorerApiUrl
+
 	publicCfg.Environment = cfg.Environment
 
 	publicCfg.Marketplace.DiamondContractAddress = cfg.Marketplace.DiamondContractAddress
@@ -153,12 +192,15 @@ func (cfg *Config) GetSanitized() interface{} {
 	publicCfg.Log.IsProd = cfg.Log.IsProd
 	publicCfg.Log.JSON = cfg.Log.JSON
 	publicCfg.Log.LevelApp = cfg.Log.LevelApp
-	publicCfg.Log.LevelConnection = cfg.Log.LevelConnection
-	publicCfg.Log.LevelProxy = cfg.Log.LevelProxy
-	publicCfg.Log.LevelScheduler = cfg.Log.LevelScheduler
+	publicCfg.Log.LevelTCP = cfg.Log.LevelTCP
+	publicCfg.Log.LevelEthRPC = cfg.Log.LevelEthRPC
 
 	publicCfg.Proxy.Address = cfg.Proxy.Address
-	publicCfg.Proxy.MaxCachedDests = cfg.Proxy.MaxCachedDests
+	publicCfg.Proxy.ModelsConfigPath = cfg.Proxy.ModelsConfigPath
+	publicCfg.Proxy.StoragePath = cfg.Proxy.StoragePath
+	publicCfg.Proxy.StoreChatContext = cfg.Proxy.StoreChatContext
+	publicCfg.Proxy.ForwardChatContext = cfg.Proxy.ForwardChatContext
+	publicCfg.Proxy.RatingConfigPath = cfg.Proxy.RatingConfigPath
 
 	publicCfg.System.Enable = cfg.System.Enable
 	publicCfg.System.LocalPortRange = cfg.System.LocalPortRange

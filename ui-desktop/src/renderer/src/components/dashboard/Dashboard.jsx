@@ -3,19 +3,45 @@ import styled from 'styled-components'
 
 import withDashboardState from '../../store/hocs/withDashboardState'
 
-import { LayoutHeader } from '../common/LayoutHeader'
+import { ChainHeader } from '../common/ChainHeader'
 import BalanceBlock from './BalanceBlock'
 import TransactionModal from './tx-modal'
 import TxList from './tx-list/TxList'
 import { View } from '../common/View'
 import { toUSD } from '../../store/utils/syncAmounts';
+import {
+  BtnAccent,
+} from './BalanceBlock.styles';
 
-const Container = styled.div`
-  background-color: ${(p) => p.theme.colors.light};
-  height: 100vh;
-  max-width: 100vw;
-  position: relative;
-  padding: 0 2.4rem;
+const CustomBtn = styled(BtnAccent)`
+  margin-left: 0;
+  padding: 1.5rem 1rem;
+`
+const WidjetsContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    gap: 1.6rem;
+`
+
+const WidjetItem = styled.div`
+    margin: 1.6rem 0 1.6rem;
+    padding: 1.6rem 3.2rem;
+    border-radius: 0.375rem;
+    color: white;
+    max-width: 720px;
+
+    color: white;
+`
+
+const StakingWidjet = styled(WidjetItem)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.04);
+  border-width: 1px;
+  border: 1px solid rgba(255,255,255,0.04);
 `
 
 const Dashboard = ({
@@ -29,6 +55,8 @@ const Dashboard = ({
   getBalances,
   ethCoinPrice,
   loadTransactions,
+  getStakedFunds,
+  explorerUrl,
   ...props
 }) => {
   const [activeModal, setActiveModal] = useState(null)
@@ -45,7 +73,8 @@ const Dashboard = ({
     }
   });
   const [transactions, setTransactions] = useState([]);
-  const [pagging, setPagging] = useState({ page: 1, pageSize: 15, hasNextPage: true })
+  const [pagging, setPagging] = useState({ page: 1, pageSize: 50, hasNextPage: true })
+  const [staked, setStaked] = useState(0);
 
   const loadBalances = async () => {
     const data = await getBalances();
@@ -109,6 +138,9 @@ const Dashboard = ({
   useEffect(() => {
     loadBalances();
     getTransactions();
+    getStakedFunds(address).then((data) => {
+      setStaked(data);
+    })
 
     const interval = setInterval(() => {
       console.log("Update balances...")
@@ -125,7 +157,7 @@ const Dashboard = ({
 
   return (
     <View data-testid="dashboard-container">
-      <LayoutHeader title="My Wallet" address={address} copyToClipboard={copyToClipboard} />
+      <ChainHeader title="My Wallet" chain={props.config.chain} address={address} copyToClipboard={copyToClipboard} />
 
       <BalanceBlock
         {...balanceData}
@@ -134,10 +166,35 @@ const Dashboard = ({
         onTabSwitch={onTabSwitch}
       />
 
+      <WidjetsContainer>
+          <StakingWidjet className='staking'>
+            <div>
+              Staked Balance
+            </div>
+            <div>{staked} {props.symbol}</div>
+          </StakingWidjet>
+        <WidjetItem>
+        <CustomBtn
+             onClick={() => window.openLink(explorerUrl)}
+              block
+            >
+              Transaction Explorer
+            </CustomBtn>
+        </WidjetItem>
+        <WidjetItem>
+        <CustomBtn
+              onClick={() => window.openLink("https://staking.mor.lumerin.io")}
+              block
+            >
+              Staking Dashboard
+            </CustomBtn>
+        </WidjetItem>
+      </WidjetsContainer>
+
       <TxList
         {...pagging}
         hasNextPage={pagging.hasNextPage}
-        loadNextTransactions={getTransactions}
+        loadNextTransactions={() => {}}
         hasTransactions={!!transactions.length}
         syncStatus={syncStatus}
         transactions={transactions}

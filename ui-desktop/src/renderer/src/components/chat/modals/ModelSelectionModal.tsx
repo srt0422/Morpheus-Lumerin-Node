@@ -14,9 +14,10 @@ import { IconSearch } from '@tabler/icons-react';
 import ModelRow from './ModelRow';
 import { useState } from 'react';
 
-const rowRenderer = (models, onChangeModel) => ({ index, style }) => (
+const rowRenderer = (models, onChangeModel, symbol) => ({ index, style }) => (
     <div style={style}>
         <ModelRow
+            symbol={symbol}
             onChangeModel={onChangeModel}
             key={models[index].Id}
             model={models[index]}
@@ -35,7 +36,7 @@ const RVContainer = styled(RVList)`
    overflow: visible !important;
   }`
 
-const ModelSelectionModal = ({ isActive, handleClose, models, onChangeModel }) => {
+const ModelSelectionModal = ({ isActive, handleClose, models, onChangeModel, symbol, providersAvailability }) => {
     const [search, setSearch] = useState<string | undefined>();
 
     if (!isActive) {
@@ -47,7 +48,34 @@ const ModelSelectionModal = ({ isActive, handleClose, models, onChangeModel }) =
         handleClose();
     }
 
-    const filterdModels = search ? models.filter(m => m.Name.includes(search)) : models;
+    const sortedModels = models
+        .map(m => {
+            if(m.isLocal || !providersAvailability){
+                return ({...m, isOnline: true })
+            }
+
+            const info = m.bids.reduce((acc, next) => {
+                const entry = providersAvailability.find(pa => pa.id == next.Provider);
+                if(!entry) {
+                    return acc;
+                }
+
+                if(entry.isOnline) {
+                    return acc;
+                }
+
+                const isOnline = entry.status != "disconnected";
+
+                return {
+                    isOnline,
+                    lastCheck: !isOnline ? entry.time : undefined
+                }
+            }, {});
+            return ({ ...m, ...info })
+        } )
+        .sort((a, b) => b.isOnline - a.isOnline);
+
+    const filterdModels = search ? sortedModels.filter(m => m.Name.toLowerCase().includes(search.toLowerCase())) : sortedModels;
 
     return (
         <Modal 
@@ -58,7 +86,7 @@ const ModelSelectionModal = ({ isActive, handleClose, models, onChangeModel }) =
             bodyProps={bodyProps}
         >
             <TitleWrapper>
-                <Title>Select Model</Title>
+                <Title>Select Model To Create Chat</Title>
             </TitleWrapper>
             <SearchContainer>
                 <InputGroup style={{ marginBottom: '15px' }}>
@@ -75,9 +103,9 @@ const ModelSelectionModal = ({ isActive, handleClose, models, onChangeModel }) =
             </SearchContainer>
             { filterdModels.length == 0 && <div>No models found</div> }
             <AutoSizer width={400} height={385}>
-                {({ width, height }) => (
+                {({ width }) => (
                     <RVContainer
-                        rowRenderer={rowRenderer(filterdModels, changeModelHandler)}
+                        rowRenderer={rowRenderer(filterdModels, changeModelHandler, symbol )}
                         rowHeight={45}
                         rowCount={filterdModels.length}
                         height={385} // defaults for tests

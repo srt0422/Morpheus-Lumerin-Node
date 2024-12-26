@@ -1,12 +1,25 @@
 {
-    "0x2d4b79107cc0b262f29628d97e6a4905a37e7fc9cd820dbdaf359e9ff5f5d9cf": {
-        "modelName": "v1-5-pruned-emaonly.safetensors [d7049739]",
-        "apiType": "prodia",
-        "apiUrl": "https://api.prodia.com/v1/sd/generate",
-        "apiKey": "API_KEY_HERE"
+  "$schema": "./internal/config/models-config-schema.json",
+  "models": [
+    {
+      "modelId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "modelName": "llama2",
+      "apiType": "openai",
+      "apiUrl": "http://localhost:8080/v1"
     },
-    "0x6a4813e866a48da528c533e706344ea853a1d3f21e37b4c8e7ffd5ff25779018": {
-        "modelName": "llama2",
-        "apiType": "openai"
+    {
+      "modelId": "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "modelName": "v1-5-pruned-emaonly.safetensors [d7049739]",
+      "apiType": "prodia-sd",
+      "apiUrl": "https://api.prodia.com/v1",
+      "apiKey": "FILL_ME_IN"
+    },
+    {
+      "modelId": "0x0000000000000000000000000000000000000000000000000000000000000002",
+      "modelName": "SDXL1.0-base",
+      "apiType": "hyperbolic-sd",
+      "apiUrl": "https://api.hyperbolic.xyz/v1",
+      "apiKey": "Authentication Token"
     }
+  ]
 }

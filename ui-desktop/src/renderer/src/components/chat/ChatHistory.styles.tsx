@@ -6,7 +6,7 @@ export const Container = styled.div`
         display: none !important; 
     }
     .history-block {
-        height: calc(100vh - 100px);
+        height: calc(100vh - 140px);
     }
     .history-scroll-block {
         overflow-y: auto;
@@ -19,6 +19,11 @@ export const Container = styled.div`
             color: ${p => p.theme.colors.morMain}
             border-color: ${p => p.theme.colors.morMain}
             background-color: rgba(0,0,0,0.4);
+        }
+
+        .list-container {
+            overflow-y: auto;
+            max-height: calc(100vh - 90px);
         }
     }
 `
@@ -81,7 +86,7 @@ export const HistoryEntryTitle = styled(FlexSpaceBetween)`
 
 export const ModelName = styled.div`
     text-overflow: ellipsis;
-    width: 250px;
+    width: 220px;
     height: 24px;
     overflow: hidden;
     text-wrap: nowrap;
@@ -97,6 +102,10 @@ export const Duration = styled.div`
 `
 
 export const IconsContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    width: 100px;
     svg:hover {
         opacity: 0.8
     }

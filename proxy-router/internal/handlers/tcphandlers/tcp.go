@@ -13,33 +13,32 @@ import (
 )
 
 func NewTCPHandler(
-	log, connLog lib.ILogger,
-	schedulerLogFactory func(contractID string) (lib.ILogger, error),
+	tcpLog lib.ILogger,
 	morRpcHandler *proxyapi.MORRPCController,
 ) transport.Handler {
 	return func(ctx context.Context, conn net.Conn) {
 		addr := conn.RemoteAddr().String()
-		sourceLog := connLog.Named("SRC").With("SrcAddr", addr)
+		sourceLog := tcpLog.Named("TCP").With("SrcAddr", addr)
 
 		defer func() {
-			sourceLog.Info("Closing connection")
+			sourceLog.Debugf("closing connection")
 			conn.Close()
 		}()
 
 		msg, err := getMessage(conn)
 		if err != nil {
-			sourceLog.Error("Error reading message", err)
+			sourceLog.Error("error reading message", err)
 			return
 		}
 
 		err = morRpcHandler.Handle(ctx, *msg, sourceLog, func(resp *morrpc.RpcResponse) error {
+			sourceLog.Debugf("sending TCP response for method: %s", msg.Method)
 			_, err := sendMsg(conn, resp)
 			if err != nil {
 				sourceLog.Errorf("Error sending message: %s", err)
 				return err
 			}
-			sourceLog.Debug("sent message")
-			return err
+			return nil
 		})
 		if err != nil {
 			sourceLog.Errorf("Error handling message: %s\nMessage: %s\n", err, msg)

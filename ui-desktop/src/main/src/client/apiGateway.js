@@ -62,9 +62,9 @@ const sendMor = async (to, amount) => {
     }
 }
 
-const getTransactions = async (page = 1, size = 15) => {
+const getTransactions = async (payload) => {
     try {
-        const path = `${config.chain.localProxyRouterUrl}/blockchain/transactions?page=${page}&limit=${size}`
+        const path = `${config.chain.localProxyRouterUrl}/blockchain/transactions?page=${payload.page}&limit=${payload.pageSize}`
         const response = await fetch(path);
         const data = await response.json();
         return data.transactions;
@@ -114,6 +114,137 @@ const getTokenSupply = async () => {
     }
 }
 
+/**
+ * 
+ * @returns {{
+ *   title: string,
+ *   chatId: string[]
+ * }}
+ */
+const getChatHistoryTitles = async () => {
+    try {
+        const path = `${config.chain.localProxyRouterUrl}/v1/chats`;
+        const response = await fetch(path);
+        const body = await response.json();
+        return body;
+    }
+    catch (e) {
+        console.log("Error", e)
+        return null;
+    }
+}
+
+/**
+ * @typedef ChatHistory
+ * @property {string} title
+ * @property {string} modelId
+ * @property {string} sessionId
+ * @property {ChatMessage[]} messages
+ */
+
+/**
+ * @typedef ChatMessage
+ * @property {string} response
+ * @property {string} prompt
+ * @property {number} promptAt
+ * @property {number} responseAt
+ */ 
+
+/**
+ * @typedef ChatPrompt
+ * @property {string} model
+ * @property {{
+ *  role: string,
+ *  content: string
+ * }[]} messages
+ */
+
+/**
+ * @param {string} chatId
+ * @returns {Promise<ChatHistory>}
+*/
+const getChatHistory = async (chatId) => {
+   try {
+       const path = `${config.chain.localProxyRouterUrl}/v1/chats/${chatId}`;
+       const response = await fetch(path);
+       const body = await response.json();
+       return body;
+   }
+   catch (e) {
+       console.log("Error", e)
+       return null;
+   }
+}
+
+/**
+ * @param {string} chatId
+ * @returns {Promise<boolean>}
+*/
+const deleteChatHistory = async (chatId) => {
+    try {
+        const path = `${config.chain.localProxyRouterUrl}/v1/chats/${chatId}`;
+        const response = await fetch(path, {
+            method: "DELETE",
+        });
+        const body = await response.json();
+        return body.result;
+    }
+    catch (e) {
+        console.log("Error", e)
+        return false;
+    }
+ }
+
+ /**
+ * @param {string} chatId
+ * @param {string} title
+ * @returns {Promise<boolean>}
+*/
+const updateChatHistoryTitle = async ({ id, title}) => {
+    try {
+        const path = `${config.chain.localProxyRouterUrl}/v1/chats/${id}`;
+        const response = await fetch(path, {
+            method: "POST",
+            body: JSON.stringify({ title }),
+        });
+        const body = await response.json();
+        return body.result;
+    }
+    catch (e) {
+        console.log("Error", e)
+        return false;
+    }
+ }
+
+  /**
+ * @param {string} address
+ * @param {string} endpoint
+ * @returns {Promise<boolean>}
+*/
+const checkProviderConnectivity = async ({ address, endpoint}) => {
+    try {
+        const path = `${config.chain.localProxyRouterUrl}/proxy/provider/ping`;
+        const response = await fetch(path, {
+            method: "POST",
+            body: JSON.stringify({ 
+                providerAddr: address,
+                providerUrl: endpoint
+             }),
+        });
+
+        if(!response.ok) {
+            return false;
+        }
+
+        const body = await response.json();
+        return !!body.ping;
+    }
+    catch (e) {
+        console.log("checkProviderConnectivity: Error", e)
+        return false;
+    }
+ }
+
 export default {
     getAllModels,
     getBalances,
@@ -122,5 +253,10 @@ export default {
     getTransactions,
     getMorRate,
     getTodaysBudget,
-    getTokenSupply
+    getTokenSupply,
+    getChatHistoryTitles,
+    getChatHistory,
+    updateChatHistoryTitle,
+    deleteChatHistory,
+    checkProviderConnectivity
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/blockchainapi/structs"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/interfaces"
 	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/lib"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/registries"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gin-gonic/gin"
 )
@@ -60,6 +61,7 @@ func (c *BlockchainController) RegisterRoutes(r interfaces.Router) {
 	r.GET("/proxy/sessions/:id/providerClaimableBalance", c.getProviderClaimableBalance)
 	r.POST("/proxy/sessions/:id/providerClaim", c.claimProviderBalance)
 	r.GET("/blockchain/sessions/user", c.getSessionsForUser)
+	r.GET("/blockchain/sessions/user/ids", c.getSessionsIdsForUser)
 	r.GET("/blockchain/sessions/provider", c.getSessionsForProvider)
 	r.GET("/blockchain/sessions/:id", c.getSession)
 	r.POST("/blockchain/sessions", c.openSession)
@@ -104,9 +106,8 @@ func (c *BlockchainController) getProviderClaimableBalance(ctx *gin.Context) {
 //	@Description	Claim provider balance from session
 //	@Tags			sessions
 //	@Produce		json
-//	@Param			claim	body		structs.AmountReq	true	"Claim"
-//	@Param			id		path		string				true	"Session ID"
-//	@Success		200		{object}	structs.TxRes
+//	@Param			id	path		string	true	"Session ID"
+//	@Success		200	{object}	structs.TxRes
 //	@Router			/proxy/sessions/{id}/providerClaim [post]
 func (c *BlockchainController) claimProviderBalance(ctx *gin.Context) {
 	var params structs.PathHex32ID
@@ -117,14 +118,7 @@ func (c *BlockchainController) claimProviderBalance(ctx *gin.Context) {
 		return
 	}
 
-	_, amount, err := c.getSendParams(ctx)
-	if err != nil {
-		c.log.Error(err)
-		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
-		return
-	}
-
-	txHash, err := c.service.ClaimProviderBalance(ctx, params.ID.Hash, amount)
+	txHash, err := c.service.ClaimProviderBalance(ctx, params.ID.Hash)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -141,10 +135,27 @@ func (c *BlockchainController) claimProviderBalance(ctx *gin.Context) {
 //	@Description	Get providers list from blokchain
 //	@Tags			providers
 //	@Produce		json
-//	@Success		200	{object}	structs.ProvidersRes
+//	@Param			request	query		structs.QueryOffsetLimitOrderNoDefault	true	"Query Params"
+//	@Success		200		{object}	structs.ProvidersRes
 //	@Router			/blockchain/providers [get]
 func (c *BlockchainController) getAllProviders(ctx *gin.Context) {
-	providers, err := c.service.GetAllProviders(ctx)
+	offset, limit, order, err := getOffsetLimitOrderNoDefault(ctx)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	var providers []*structs.Provider
+
+	if limit == 0 {
+		// if pagination is not used return all providers
+		// TODO: deprecate this
+		providers, err = c.service.GetAllProviders(ctx)
+	} else {
+		// if pagination is used return providers with offset and limit
+		providers, err = c.service.GetProviders(ctx, offset, limit, order)
+	}
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
@@ -216,9 +227,8 @@ func (c *BlockchainController) sendMOR(ctx *gin.Context) {
 //	@Description	Get bids from blockchain by provider
 //	@Tags			bids
 //	@Produce		json
-//	@Param			offset	query		string	false	"Offset"
-//	@Param			limit	query		string	false	"Limit"
-//	@Param			id		path		string	true	"Provider ID"
+//	@Param			id		path		string							true	"Provider ID"
+//	@Param			request	query		structs.QueryOffsetLimitOrder	true	"Query Params"
 //	@Success		200		{object}	structs.BidsRes
 //	@Router			/blockchain/providers/{id}/bids [get]
 func (c *BlockchainController) getBidsByProvider(ctx *gin.Context) {
@@ -230,14 +240,14 @@ func (c *BlockchainController) getBidsByProvider(ctx *gin.Context) {
 		return
 	}
 
-	offset, limit, err := getOffsetLimit(ctx)
+	offset, limit, order, err := getOffsetLimitOrder(ctx)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
 		return
 	}
 
-	bids, err := c.service.GetBidsByProvider(ctx, params.ID.Address, offset, limit)
+	bids, err := c.service.GetBidsByProvider(ctx, params.ID.Address, offset, limit, order)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -254,8 +264,9 @@ func (c *BlockchainController) getBidsByProvider(ctx *gin.Context) {
 //	@Description	Get bids from blockchain by provider
 //	@Tags			bids
 //	@Produce		json
-//	@Param			id	path		string	true	"Provider ID"
-//	@Success		200	{object}	structs.BidsRes
+//	@Param			id		path		string							true	"Provider ID"
+//	@Param			request	query		structs.QueryOffsetLimitOrder	true	"Query Params"
+//	@Success		200		{object}	structs.BidsRes
 //	@Router			/blockchain/providers/{id}/bids/active [get]
 func (c *BlockchainController) getActiveBidsByProvider(ctx *gin.Context) {
 	var params structs.PathEthAddrID
@@ -266,7 +277,14 @@ func (c *BlockchainController) getActiveBidsByProvider(ctx *gin.Context) {
 		return
 	}
 
-	bids, err := c.service.GetActiveBidsByProvider(ctx, params.ID.Address)
+	offset, limit, order, err := getOffsetLimitOrder(ctx)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	bids, err := c.service.GetActiveBidsByProvider(ctx, params.ID.Address, offset, limit, order)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -283,10 +301,26 @@ func (c *BlockchainController) getActiveBidsByProvider(ctx *gin.Context) {
 //	@Description	Get models list from blokchain
 //	@Tags			models
 //	@Produce		json
-//	@Success		200	{object}	structs.ModelsRes
+//	@Param			request	query		structs.QueryOffsetLimitOrderNoDefault	true	"Query Params"
+//	@Success		200		{object}	structs.ModelsRes
 //	@Router			/blockchain/models [get]
 func (c *BlockchainController) getAllModels(ctx *gin.Context) {
-	models, err := c.service.GetAllModels(ctx)
+	offset, limit, order, err := getOffsetLimitOrderNoDefault(ctx)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	var models []*structs.Model
+	if limit == 0 {
+		// if pagination is not used return all models
+		// TODO: deprecate this
+		models, err = c.service.GetAllModels(ctx)
+	} else {
+		// if pagination is used return models with offset and limit
+		models, err = c.service.GetModels(ctx, offset, limit, order)
+	}
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
@@ -303,9 +337,8 @@ func (c *BlockchainController) getAllModels(ctx *gin.Context) {
 //	@Description	Get bids from blockchain by model agent
 //	@Tags			bids
 //	@Produce		json
-//	@Param			offset	query		string	false	"Offset"
-//	@Param			limit	query		string	false	"Limit"
-//	@Param			id		path		string	true	"ModelAgent ID"
+//	@Param			id		path		string							true	"ModelAgent ID"
+//	@Param			request	query		structs.QueryOffsetLimitOrder	true	"Query Params"
 //	@Success		200		{object}	structs.BidsRes
 //	@Router			/blockchain/models/{id}/bids [get]
 func (c *BlockchainController) getBidsByModelAgent(ctx *gin.Context) {
@@ -317,14 +350,14 @@ func (c *BlockchainController) getBidsByModelAgent(ctx *gin.Context) {
 		return
 	}
 
-	offset, limit, err := getOffsetLimit(ctx)
+	offset, limit, order, err := getOffsetLimitOrder(ctx)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
 		return
 	}
 
-	bids, err := c.service.GetBidsByModelAgent(ctx, params.ID.Hash, offset, limit)
+	bids, err := c.service.GetBidsByModelAgent(ctx, params.ID.Hash, offset, limit, order)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -341,8 +374,9 @@ func (c *BlockchainController) getBidsByModelAgent(ctx *gin.Context) {
 //	@Description	Get bids from blockchain by model agent
 //	@Tags			bids
 //	@Produce		json
-//	@Param			id	path		string	true	"ModelAgent ID"
-//	@Success		200	{object}	structs.BidsRes
+//	@Param			id		path		string							true	"ModelAgent ID"
+//	@Param			request	query		structs.QueryOffsetLimitOrder	true	"Query Params"
+//	@Success		200		{object}	structs.BidsRes
 //	@Router			/blockchain/models/{id}/bids [get]
 func (c *BlockchainController) getActiveBidsByModel(ctx *gin.Context) {
 	var params structs.PathHex32ID
@@ -353,7 +387,14 @@ func (c *BlockchainController) getActiveBidsByModel(ctx *gin.Context) {
 		return
 	}
 
-	bids, err := c.service.GetActiveBidsByModel(ctx, params.ID.Hash)
+	offset, limit, order, err := getOffsetLimitOrder(ctx)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	bids, err := c.service.GetActiveBidsByModel(ctx, params.ID.Hash, offset, limit, order)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -492,7 +533,7 @@ func (c *BlockchainController) openSession(ctx *gin.Context) {
 		return
 	}
 
-	sessionId, err := c.service.OpenSession(ctx, reqPayload.Approval, reqPayload.ApprovalSig, reqPayload.Stake.Unpack())
+	sessionId, err := c.service.OpenSession(ctx, reqPayload.Approval, reqPayload.ApprovalSig, reqPayload.Stake.Unpack(), reqPayload.DirectPayment)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -545,12 +586,12 @@ func (s *BlockchainController) openSessionByBid(ctx *gin.Context) {
 //	@Tags			sessions
 //	@Produce		json
 //	@Accept			json
-//	@Param			opensession	body		structs.OpenSessionWithDurationRequest	true	"Open session"
-//	@Param			id			path		string									true	"Model ID"
+//	@Param			opensession	body		structs.OpenSessionWithFailover	true	"Open session"
+//	@Param			id			path		string							true	"Model ID"
 //	@Success		200			{object}	structs.OpenSessionRes
 //	@Router			/blockchain/models/{id}/session [post]
 func (s *BlockchainController) openSessionByModelId(ctx *gin.Context) {
-	var reqPayload structs.OpenSessionWithDurationRequest
+	var reqPayload structs.OpenSessionWithFailover
 	if err := ctx.ShouldBindJSON(&reqPayload); err != nil {
 		s.log.Error(err)
 		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
@@ -565,7 +606,8 @@ func (s *BlockchainController) openSessionByModelId(ctx *gin.Context) {
 		return
 	}
 
-	sessionId, err := s.service.OpenSessionByModelId(ctx, params.ID.Hash, reqPayload.SessionDuration.Unpack())
+	isFailoverEnabled := reqPayload.Failover
+	sessionId, err := s.service.OpenSessionByModelId(ctx, params.ID.Hash, reqPayload.SessionDuration.Unpack(), reqPayload.DirectPayment, isFailoverEnabled, common.Address{})
 	if err != nil {
 		s.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -640,13 +682,12 @@ func (c *BlockchainController) getSession(ctx *gin.Context) {
 //	@Description	Get sessions from blockchain by user
 //	@Tags			sessions
 //	@Produce		json
-//	@Param			offset	query		string	false	"Offset"
-//	@Param			limit	query		string	false	"Limit"
-//	@Param			user	query		string	true	"User address"
+//	@Param			user	query		string							true	"User address"
+//	@Param			request	query		structs.QueryOffsetLimitOrder	true	"Query Params"
 //	@Success		200		{object}	structs.SessionsRes
 //	@Router			/blockchain/sessions/user [get]
 func (c *BlockchainController) getSessionsForUser(ctx *gin.Context) {
-	offset, limit, err := getOffsetLimit(ctx)
+	offset, limit, order, err := getOffsetLimitOrder(ctx)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
@@ -661,7 +702,7 @@ func (c *BlockchainController) getSessionsForUser(ctx *gin.Context) {
 		return
 	}
 
-	sessions, err := c.service.GetSessions(ctx, req.User.Address, common.Address{}, offset, limit)
+	sessions, err := c.service.GetSessions(ctx, req.User.Address, common.Address{}, offset, limit, order)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -672,19 +713,55 @@ func (c *BlockchainController) getSessionsForUser(ctx *gin.Context) {
 	return
 }
 
+// GetSessionsIds godoc
+//
+//	@Summary		Get Sessions for User
+//	@Description	Get sessions from blockchain by user
+//	@Tags			sessions
+//	@Produce		json
+//	@Param			user	query		string							true	"User address"
+//	@Param			request	query		structs.QueryOffsetLimitOrder	true	"Query Params"
+//	@Success		200		{object}	structs.SessionsRes
+//	@Router			/blockchain/sessions/user/ids [get]
+func (c *BlockchainController) getSessionsIdsForUser(ctx *gin.Context) {
+	offset, limit, order, err := getOffsetLimitOrder(ctx)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	var req structs.QueryUser
+	err = ctx.ShouldBindQuery(&req)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	sessionsIds, err := c.service.GetSessionsIds(ctx, req.User.Address, common.Address{}, offset, limit, order)
+	if err != nil {
+		c.log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, sessionsIds)
+	return
+}
+
 // GetSessions godoc
 //
 //	@Summary		Get Sessions for Provider
 //	@Description	Get sessions from blockchain by provider
 //	@Tags			sessions
 //	@Produce		json
-//	@Param			offset		query		string	false	"Offset"
-//	@Param			limit		query		string	false	"Limit"
-//	@Param			provider	query		string	true	"Provider address"
+//	@Param			request		query		structs.QueryOffsetLimitOrder	true	"Query Params"
+//	@Param			provider	query		string							true	"Provider address"
 //	@Success		200			{object}	structs.SessionsRes
 //	@Router			/blockchain/sessions/provider [get]
 func (c *BlockchainController) getSessionsForProvider(ctx *gin.Context) {
-	offset, limit, err := getOffsetLimit(ctx)
+	offset, limit, order, err := getOffsetLimitOrder(ctx)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
@@ -699,7 +776,7 @@ func (c *BlockchainController) getSessionsForProvider(ctx *gin.Context) {
 		return
 	}
 
-	sessions, err := c.service.GetSessions(ctx, common.Address{}, req.Provider.Address, offset, limit)
+	sessions, err := c.service.GetSessions(ctx, common.Address{}, req.Provider.Address, offset, limit, order)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -860,19 +937,11 @@ func (c *BlockchainController) createProvider(ctx *gin.Context) {
 //	@Summary	Deregister Provider
 //	@Tags		providers
 //	@Produce	json
-//	@Param		id	path		string	true	"Provider Address"
+//	@Param		id	path		string	true	"Provider ID"
 //	@Success	200	{object}	structs.TxRes
 //	@Router		/blockchain/providers/{id} [delete]
 func (c *BlockchainController) deregisterProvider(ctx *gin.Context) {
-	var params structs.PathEthAddrID
-	err := ctx.ShouldBindUri(&params)
-	if err != nil {
-		c.log.Error(err)
-		ctx.JSON(http.StatusBadRequest, structs.ErrRes{Error: err.Error()})
-		return
-	}
-
-	txHash, err := c.service.DeregisterProdiver(ctx, params.ID.Address)
+	txHash, err := c.service.DeregisterProdiver(ctx)
 	if err != nil {
 		c.log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, structs.ErrRes{Error: err.Error()})
@@ -885,13 +954,14 @@ func (c *BlockchainController) deregisterProvider(ctx *gin.Context) {
 
 // CreateNewModel godoc
 //
-//	@Summary	Creates model in blockchain
-//	@Tags		models
-//	@Produce	json
-//	@Accept		json
-//	@Param		model	body		structs.CreateModelRequest	true	"Model"
-//	@Success	200		{object}	structs.ModelRes
-//	@Router		/blockchain/models [post]
+//	@Summary		Creates model in blockchain
+//	@Description	If you provide ID in request it will be used as "Base Id" for generation of new model ID. So actual ID will be generated from it, and you will get it in response.
+//	@Tags			models
+//	@Produce		json
+//	@Accept			json
+//	@Param			model	body		structs.CreateModelRequest	true	"Model"
+//	@Success		200		{object}	structs.ModelRes
+//	@Router			/blockchain/models [post]
 func (c *BlockchainController) createNewModel(ctx *gin.Context) {
 	var model structs.CreateModelRequest
 	if err := ctx.ShouldBindJSON(&model); err != nil {
@@ -1022,15 +1092,26 @@ func (s *BlockchainController) getSendParams(ctx *gin.Context) (to common.Addres
 	return body.To, body.Amount.Unpack(), nil
 }
 
-func getOffsetLimit(ctx *gin.Context) (offset *big.Int, limit uint8, err error) {
-	var paging structs.QueryOffsetLimit
+func getOffsetLimitOrder(ctx *gin.Context) (offset *big.Int, limit uint8, order registries.Order, err error) {
+	var paging structs.QueryOffsetLimitOrder
 
 	err = ctx.ShouldBindQuery(&paging)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, false, err
 	}
 
-	return paging.Offset.Unpack(), paging.Limit, nil
+	return paging.Offset.Unpack(), paging.Limit, mapOrder(paging.Order), nil
+}
+
+func getOffsetLimitOrderNoDefault(ctx *gin.Context) (offset *big.Int, limit uint8, order registries.Order, err error) {
+	var paging structs.QueryOffsetLimitOrderNoDefault
+
+	err = ctx.ShouldBindQuery(&paging)
+	if err != nil {
+		return nil, 0, false, err
+	}
+
+	return paging.Offset.Unpack(), paging.Limit, mapOrder(paging.Order), nil
 }
 
 func getPageLimit(ctx *gin.Context) (page uint64, limit uint8, err error) {

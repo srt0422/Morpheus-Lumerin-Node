@@ -1,12 +1,15 @@
 package lib
 
 import (
-	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/lumerintoken"
-	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/marketplace"
-	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/modelregistry"
-	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/morpheustoken"
-	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/providerregistry"
-	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/contracts/sessionrouter"
+	"fmt"
+	"reflect"
+
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/lumerintoken"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/marketplace"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/modelregistry"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/morpheustoken"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/providerregistry"
+	"github.com/MorpheusAIs/Morpheus-Lumerin-Node/proxy-router/internal/repositories/contracts/bindings/sessionrouter"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -31,11 +34,24 @@ type EVMError struct {
 }
 
 func (e EVMError) Error() string {
-	idBytes := e.Abi.ID.Bytes()
-	if len(idBytes) > 4 {
-		idBytes = idBytes[:4]
+	return fmt.Sprintf("EVM error: %s %+v", e.Abi.Sig, e.Args)
+}
+
+// Implement As() method to check if EVMError can be converted to another type.
+func (e EVMError) As(target interface{}) bool {
+	// Ensure that the target is a pointer.
+	if reflect.TypeOf(target).Kind() != reflect.Ptr {
+		// As target should be a pointer
+		return false
 	}
-	return "EVM error: " + e.Abi.Sig + " " + common.BytesToHash(idBytes).Hex()
+
+	switch v := target.(type) {
+	case *EVMError:
+		*v = e // Assign the concrete EVMError to the target
+		return true
+	default:
+		return false
+	}
 }
 
 // TryConvertGethError attempts to convert geth error to an EVMError, otherwise just returns original error

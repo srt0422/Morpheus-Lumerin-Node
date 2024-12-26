@@ -2,7 +2,7 @@
 This document provides a step-by-step guide to setting up a Consumer Node for the Morepheus Network so that you can setup session and interact with the remote providers.
 
 ## Pre-requisites:
-* Create or use an existing ERC-20 wallet that has saMOR and saETH (Sepolia Arbitrum) tokens - you can use Metamask (new wallet..not derived) or any other ERC-20 wallet.  You will need to have access to the wallet's private key **NEVER SHARE THIS WITH ANYONE** for steps below to authorize the contract to spend on your behalf.
+* Create or use an existing ERC-20 wallet that has MOR and ETH (Sepolia Arbitrum) tokens - you can use Metamask (new wallet..not derived) or any other ERC-20 wallet.  You will need to have access to the wallet's private key **NEVER SHARE THIS WITH ANYONE** for steps below to authorize the contract to spend on your behalf.
 
 ## TL;DR
 * Install and Configure the proxy-router node (once)
@@ -36,16 +36,16 @@ Save the .env file and exit the editor
 #### 4. Build and start the proxy-router 
 ```bash 
 ./build.sh
-go run cmd/main.go
+./bin/proxy-router
 ```
-After the iniial setup, you can execute `git pull` to get the latest updates and re-run the `./build.sh` and `go run cmd/main.go` to update the proxy-router with the latest changes.
+After the iniial setup, you can execute `git pull` to get the latest updates and re-run the `./build.sh` and `./bin/proxy-router` to update the proxy-router with the latest changes.
 
 #### 5. Confirm that the build is successful and console should show similar to below after started (and listening on specified ports 8082 for Swagger API and 3333 for the proxy-router):
 
 You can also test http://localhost:8082/swagger/index.html to confirm the API is running and accessible.
 
 ```
-Loaded config: {AIEngine:{OpenAIBaseURL: OpenAIKey:} Blockchain:{EthNodeAddress: EthLegacyTx:false ExplorerApiUrl:} Environment:development Marketplace:{DiamondContractAddress:0x8e19288d908b2d9F8D7C539c74C899808AC3dE45 MorTokenAddress:0xc1664f994Fd3991f98aE944bC16B9aED673eF5fD WalletPrivateKey:<nil>} Log:{Color:true FolderPath: IsProd:false JSON:false LevelApp:info LevelConnection:info LevelProxy:info LevelScheduler:info LevelContract:} Proxy:{Address:0.0.0.0:3333 MaxCachedDests:5 StoragePath:} System:{Enable:false LocalPortRange:1024 65535 NetdevMaxBacklog:100000 RlimitHard:524288 RlimitSoft:524288 Somaxconn:100000 TcpMaxSynBacklog:100000} Web:{Address:0.0.0.0:8082 PublicUrl:localhost:8082}}
+Loaded config: {AIEngine:{OpenAIBaseURL: OpenAIKey:} Blockchain:{EthNodeAddress: EthLegacyTx:false ExplorerApiUrl:} Environment:development Marketplace:{DiamondContractAddress:0xb8C55cD613af947E73E262F0d3C54b7211Af16CF MorTokenAddress:0x34a285a1b1c166420df5b6630132542923b5b27e WalletPrivateKey:<nil>} Log:{Color:true FolderPath: IsProd:false JSON:false LevelApp:info LevelConnection:info LevelProxy:info LevelScheduler:info LevelContract:} Proxy:{Address:0.0.0.0:3333 MaxCachedDests:5 StoragePath:} System:{Enable:false LocalPortRange:1024 65535 NetdevMaxBacklog:100000 RlimitHard:524288 RlimitSoft:524288 Somaxconn:100000 TcpMaxSynBacklog:100000} Web:{Address:0.0.0.0:8082 PublicUrl:localhost:8082}}
 2024-07-23T12:58:04.560735	INFO	APP	proxy-router TO BE SET AT BUILD TIME
 2024-07-23T12:58:08.249559	INFO	APP	connected to ethereum node: wss://arb-sepolia.g.alchemy.com/v2/<masked>, chainID: 421614
 2024-07-23T12:58:08.278792	INFO	BADGER	All 0 tables opened in 0s
@@ -55,14 +55,14 @@ Loaded config: {AIEngine:{OpenAIBaseURL: OpenAIKey:} Blockchain:{EthNodeAddress:
 2024-07-23T12:58:08.290268	INFO	proxy state: running
 2024-07-23T12:58:08.290507	INFO	HTTP	http server is listening: 0.0.0.0:8082
 2024-07-23T12:58:08.290631	INFO	Wallet address: <masked>
-2024-07-23T12:58:08.290841	INFO	started watching events, address 0x8e19288d908b2d9F8D7C539c74C899808AC3dE45
+2024-07-23T12:58:08.290841	INFO	started watching events, address 0xb8C55cD613af947E73E262F0d3C54b7211Af16CF
 2024-07-23T12:58:08.290866	INFO	TCP	tcp server is listening: 0.0.0.0:3333
 ```
 ==================================
 ### B. Authorize the contract to spend on your behalf
 Either via the swagger interface http://localhost:8082/swagger/index.html#/wallet/post_blockchain_allowance or following CLI, you can authorize the contract to spend on your behalf. **This only needs to be done once per wallet, or when funds have been depleted.**
 
-`curl -X 'POST' 'http://localhost:8082/blockchain/approve?spender=0x8e19288d908b2d9F8D7C539c74C899808AC3dE45&amount=3' -H 'accept: application/json' -d ''` # Approve the contract to spend 3 saMOR tokens on your behalf
+`curl -X 'POST' 'http://localhost:8082/blockchain/approve?spender=0xb8C55cD613af947E73E262F0d3C54b7211Af16CF&amount=3' -H 'accept: application/json' -d ''` # Approve the contract to spend 3 MOR tokens on your behalf
 
 ### C. Query the blockchain for various models / providers (Get ModelID)
 You can query the blockchain for various models and providers to get the ModelID. This can be done via the swagger interface http://localhost:8082/swagger/index.html#/marketplace/get_marketplace_models or following CLI:
@@ -144,8 +144,8 @@ curl -X 'POST' \
 
 
 ### Quick and Dirty Sample:
-`curl -X 'POST' 'http://localhost:8082/blockchain/approve?spender=0x8e19288d908b2d9F8D7C539c74C899808AC3dE45&amount=3' -H 'accept: application/json' -d ''`
-    # approves the smart contract `0x8e19...dE45` to spend 3 saMOR tokens on your behalf
+`curl -X 'POST' 'http://localhost:8082/blockchain/approve?spender=0xb8C55cD613af947E73E262F0d3C54b7211Af16CF&amount=3' -H 'accept: application/json' -d ''`
+    # approves the smart contract `0x8e19...dE45` to spend 3 MOR tokens on your behalf
 
 `curl -s -X 'GET' 'http://localhost:8082/wallet' -H 'accept: application/json' | jq .address` 
     # returns the wallet ID (confirm that it matches your wallet)
